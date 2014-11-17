@@ -1,0 +1,62 @@
+---
+swagger: "2.0"
+info:
+  title: Key Service (Public)
+  description: Securely deliveres the decryption key for an ebook to users who own that book.
+  version: 2.0.0
+basePath: /
+paths:
+  /keys/{keyId}:
+    post:
+      summary: Retrieve the key at the specified id
+      description: |
+        If the access token in the authorization header identifies the caller as a user that
+        owns the book referenced by the keyId then the key will be encrypted with the public
+        key given and returned.
+      consumes:
+        - multipart/form-data
+      produces:
+        - text/encrypted
+      parameters:
+        - name: keyId
+          in: path
+          description: The identifier given out by the library service for retrieval of the decryption key.
+          type: string
+          required: true
+        - name: key
+          in: formData
+          description: A Base64 encoded RSA 2048 public key (in DER format)
+          type: string
+          required: true
+        - name: Authorization
+          in: header
+          description: The bearer token from the Auth server describing the user.
+          type: string
+          required: true
+          format: "/^Bearer .+/"
+      responses:
+        200:
+          description: |
+            Key redelivery: The Base64 encoded, public key encrypted key for decrypting the specified ebook on a
+            device which has already been used to download this key.
+        201:
+          description: |
+            Key delivery: The Base64 encoded, public key encrypted key for decrypting the specified ebook on a device which has
+            never been used to download this key.
+        400:
+          description: |
+            Unsable public key: The public key given does not appear to be a Base64 encoded DER format RSA 2048 key.
+        401:
+          description: |
+            Unauthorized request: The access token in the Authorization header is invalid, has expired or is otherwise unusable.
+            Request a new one from the auth server.
+        403:
+          description: |
+            Book not owned: The user associated with the access token in the Authorization header does not have the rights to the
+            book the keyId is associated with.
+        404:
+          description: |
+            No such keyId: The keyId specified doesn't exist.
+        409:
+          description: |
+            Too many devices: The maximum number of devices have already been used to download keys for this book.

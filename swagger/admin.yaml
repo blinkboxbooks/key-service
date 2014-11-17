@@ -1,0 +1,47 @@
+---
+swagger: "2.0"
+info:
+  title: Key Service (Admin)
+  description: Generates keys for encrypting ebooks
+  version: 2.0.0
+basePath: /
+paths:
+  /isbns/{isbn}/keys:
+    post:
+      summary: Get a new key/keyId pair
+      description: |
+        The key returned should be used to encrypt a book. The keyId should be passed on to a customer
+        with the rights to read the book; it can be used with key-service-public to retrieve the key again.
+      produces:
+        - application/vnd.blinkbox.books.v2+json
+      parameters:
+        - name: isbn
+          in: path
+          type: string
+          description: The ISBN to associate the generated key with
+          required: true
+      responses:
+        200:
+          description: A generated key and keyId
+          schema:
+            type: object
+            required: [isbn, key, keyId]
+            additionalProperties: false
+            properties:
+              isbn:
+                description: The ISBN for which this key has been created
+                type: string
+              key:
+                description: The key to encrypt a book with
+                type: string
+              keyId:
+                description: an id that can be used by customers that own to retrieve the key again from the key-service-public
+          examples:
+            application/vnd.blinkbox.books.v2+json: |
+              {
+                "isbn": "9780111222333",
+                "key": "E`H?,exUQ5lzJk}n%f|2bg!#!e8.p3&*",
+                "keyId": "3d44cd9b383e956b993e4bdc357c959e84231a7e"
+              }
+        400:
+          description: The given ISBN is invalid

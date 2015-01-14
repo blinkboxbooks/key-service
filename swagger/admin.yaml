@@ -46,9 +46,9 @@ paths:
           examples:
             application/vnd.blinkbox.books.v2+json: |
               {
+                "id": "3d44cd9b383e956b993e4bdc357c959e84231a7e",
                 "isbn": "9780111222333",
-                "key": "E`H?,exUQ5lzJk}n%f|2bg!#!e8.p3&*",
-                "id": "3d44cd9b383e956b993e4bdc357c959e84231a7e"
+                "key": "E`H?,exUQ5lzJk}n%f|2bg!#!e8.p3&*"
               }
         400:
           description: The given ISBN is invalid
@@ -84,12 +84,14 @@ paths:
           examples:
             application/vnd.blinkbox.books.v2+json: |
               {
+                "id": "3d44cd9b383e956b993e4bdc357c959e84231a7e"
                 "isbn": "9780111222333",
                 "key": "E`H?,exUQ5lzJk}n%f|2bg!#!e8.p3&*",
-                "id": "3d44cd9b383e956b993e4bdc357c959e84231a7e",
-                "v1Path"
+                "v1Path": "/9780/111/222/333/f05f034c2bbf886a1ffbbb209d4d59db.epub"
               }
         400:
           description: The key id or body were not correctly formed.
+        404:
+          description: The given key id is not known.
         409:
           description: This key or v1Path has already been associated. These cannot be altered.

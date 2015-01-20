@@ -11,36 +11,24 @@ import spray.util.LoggingContext
 
 import scala.util.control.NonFatal
 
-trait AdminApiRoutes extends HttpService {
-  def create: Route
-}
-
 class AdminApi(config: AppConfig)
-              (implicit val actorRefFactory: ActorRefFactory) extends AdminApiRoutes with CommonDirectives  {
+              (implicit val actorRefFactory: ActorRefFactory) extends HttpService with CommonDirectives  {
 
   implicit val executionContext = DiagnosticExecutionContext(actorRefFactory.dispatcher)
   implicit val timeout = config.api.timeout
-  implicit val log = LoggerFactory.getLogger(classOf[AdminApi])
+  val log = LoggerFactory.getLogger(classOf[AdminApi])
 
-  val create = pathEndOrSingleSlash {
+  def createKey = pathEndOrSingleSlash {
     post {
       uncacheable("Hello World")
     }
   }
 
   val routes = rootPath(config.api.localUrl.path / "keys") {
-    monitor() {
+    monitor(log) {
       respondWithHeader(RawHeader("Vary", "Accept, Accept-Encoding")) {
-        handleExceptions(exceptionHandler) {
-          create
-        }
+        createKey
       }
     }
-  }
-
-  private def exceptionHandler(implicit log: LoggingContext) = ExceptionHandler {
-    case NonFatal(e) =>
-      log.error(e, "Unhandled error")
-      uncacheable(InternalServerError)
   }
 }

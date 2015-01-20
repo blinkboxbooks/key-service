@@ -1,0 +1,104 @@
+---
+swagger: "2.0"
+info:
+  title: Key Service (Admin)
+  description: Generates keys for encrypting ebooks
+  version: 2.0.0
+basePath: /
+paths:
+  /keys:
+    post:
+      summary: Get a new key/id pair
+      description: |
+        The key returned should be used to encrypt a book. The id should be passed on to a customer
+        with the rights to read the book; it can be used with key-service-public to retrieve the key again.
+      produces:
+        - application/vnd.blinkbox.books.v2+json
+      parameters:
+        - in: body
+          required: true
+          schema:
+            type: object
+            required: ["isbn"]
+            properties:
+              isbn:
+                type: string
+                title: ISBN
+                description: The ISBN of the book a key is needed for.
+      responses:
+        201:
+          description: A generated key and id
+          schema:
+            $ref: "#/definitions/Key"
+          examples:
+            application/vnd.blinkbox.books.v2+json: |
+              {
+                "id": "3d44cd9b383e956b993e4bdc357c959e84231a7e",
+                "isbn": "9780111222333",
+                "key": "E`H?,exUQ5lzJk}n%f|2bg!#!e8.p3&*"
+              }
+        400:
+          description: The given ISBN is invalid
+  /keys/{id}:
+    patch:
+      summary: Links a given v1 style key URI to a ref
+      description: |
+        v1 shop expects a keyfile to be available at a URL which echoes the position
+        of the epub on the resource server. This endpoint asks this version of the key-service
+        to act in the same fashion.
+      produces:
+        - application/vnd.blinkbox.books.v2+json
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: The key id to associate the path to
+          required: true
+        - in: body
+          required: true
+          schema:
+            type: object
+            required: ["v1Path"]
+            properties:
+              v1Path:
+                description: |
+                  The path on the v1 resource server where the ePub this key decrypts is found.
+                  This call will ensure the key is also available under v1 processes at /{v1Path}.{isbn}.key
+                type: string
+      responses:
+        200:
+          description: The association has been made
+          schema:
+            $ref: "#/definitions/Key"
+          examples:
+            application/vnd.blinkbox.books.v2+json: |
+              {
+                "id": "3d44cd9b383e956b993e4bdc357c959e84231a7e"
+                "isbn": "9780111222333",
+                "key": "E`H?,exUQ5lzJk}n%f|2bg!#!e8.p3&*",
+                "v1Path": "/9780/111/222/333/f05f034c2bbf886a1ffbbb209d4d59db.epub"
+              }
+        400:
+          description: The key id or body were not correctly formed.
+        404:
+          description: The given key id is not known.
+        409:
+          description: This key or v1Path has already been associated. These cannot be altered.
+
+definitions:
+  Key:
+    type: object
+    required: [id, isbn, key]
+    additionalProperties: false
+    properties:
+      isbn:
+        title: ISBN
+        description: The ISBN for which this key has been created
+        type: string
+      key:
+        title: The Key
+        description: The key to encrypt a book with, this should NEVER be stored anywhere.
+        type: string
+      id:
+        title: The Key ID
+        description: An id that can be used by customers that own this book to retrieve the key again from key-service-public

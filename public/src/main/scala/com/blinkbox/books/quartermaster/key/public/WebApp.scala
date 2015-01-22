@@ -22,8 +22,6 @@ class WebService(config: AppConfig) extends HttpServiceActor {
   }
 
   def receive = runRoute(api.routes ~ healthService.routes)
-
-  //  override def dbSettings = config.db
 }
 
 object WebApp extends App with Configuration with Loggers {

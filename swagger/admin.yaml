@@ -19,12 +19,12 @@ paths:
           required: true
           schema:
             type: object
-            required: ["isbn"]
+            required: ["isbn", "fileHash"]
             properties:
               isbn:
-                type: string
-                title: ISBN
-                description: The ISBN of the book a key is needed for.
+                $ref: "#/definitions/Key/properties/isbn"
+              fileHash:
+                $ref: "#/definitions/Key/properties/fileHash"
       responses:
         201:
           description: A generated key and id
@@ -61,10 +61,7 @@ paths:
             required: ["v1Path"]
             properties:
               v1Path:
-                description: |
-                  The path on the v1 resource server where the ePub this key decrypts is found.
-                  This call will ensure the key is also available under v1 processes at /{v1Path}.{isbn}.key
-                type: string
+                $ref: "#/definitions/Key/properties/v1Path
       responses:
         200:
           description: The association has been made
@@ -76,6 +73,7 @@ paths:
                 "id": "3d44cd9b383e956b993e4bdc357c959e84231a7e"
                 "isbn": "9780111222333",
                 "key": "E`H?,exUQ5lzJk}n%f|2bg!#!e8.p3&*",
+                "fileHash": "ebfd7eea83937a6a943154ea10eeaae9",
                 "v1Path": "/9780/111/222/333/f05f034c2bbf886a1ffbbb209d4d59db.epub"
               }
         400:
@@ -88,17 +86,30 @@ paths:
 definitions:
   Key:
     type: object
-    required: [id, isbn, key]
+    required: ["id", "isbn", "key", "fileHash"]
     additionalProperties: false
     properties:
+      id:
+        title: The Key ID
+        description: An id that can be used by customers that own this book to retrieve the key again from key-service-public
       isbn:
         title: ISBN
-        description: The ISBN for which this key has been created
+        description: The ISBN associated to this key
         type: string
       key:
         title: The Key
         description: The key to encrypt a book with, this should NEVER be stored anywhere.
         type: string
-      id:
-        title: The Key ID
-        description: An id that can be used by customers that own this book to retrieve the key again from key-service-public
+      fileHash:
+        type: string
+        title: File Hash
+        description: |
+          A unique identifier for the book being encrypted. This is so that
+          if the same book is encrypted for a second time, the same key and key-id
+          can be returned. The MD5 of the file being encrypted should be used.
+      v1Path:
+        title: Shop v1 Path
+        description: |
+          The path on the v1 resource server where the ePub this key decrypts is found.
+          This call will ensure the key is also available under v1 processes at /{v1Path}.{isbn}.key
+        type: string

@@ -1,38 +1,41 @@
 package com.blinkbox.books.quartermaster.key.admin
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRefFactory, ActorSystem, Props}
 import akka.util.Timeout
 import com.blinkbox.books.config.Configuration
-import com.blinkbox.books.logging.{DiagnosticExecutionContext, Loggers}
+import com.blinkbox.books.logging.Loggers
+import com.blinkbox.books.quartermaster.key.common._
+import com.blinkbox.books.slick.{DatabaseSupport, MySQLDatabaseSupport}
 import com.blinkbox.books.spray._
+import com.typesafe.scalalogging.StrictLogging
 import spray.can.Http
 import spray.http.Uri.Path
 import spray.routing.HttpServiceActor
 
-class WebService(config: AppConfig) extends HttpServiceActor {
+import scala.concurrent.duration._
 
-  val that = this
-  implicit val executionContext = DiagnosticExecutionContext(actorRefFactory.dispatcher)
-//  val apiService = new DefaultAdminService[DefaultDatabaseTypes](db, featureRepository, userRepository)
-  val api = new AdminApi(config)
+object Main extends App with Configuration with Loggers with StrictLogging {
+  val SERVICE_NAME = "key-service-admin"
+  logger.info(s"Starting ${SERVICE_NAME}")
+  val appConfig = AppConfig(config)
+  implicit val system = ActorSystem(SERVICE_NAME)
+  implicit val ec = system.dispatcher
 
-  val healthService = new HealthCheckHttpService {
-    override implicit def actorRefFactory = that.actorRefFactory
-    override val basePath = Path("/")
-  }
+  val dbComponent = new DefaultDatabaseComponent(appConfig.db)
+  val keyStore = new DbKeyStore[MySQLDatabaseSupport](dbComponent.db, dbComponent.tables, dbComponent.exceptionFilter, ec)
+  val adminApi = new AdminApi(appConfig, keyStore)
+  val service = system.actorOf(Props(classOf[AdminApiActor], adminApi))
 
-  def receive = runRoute(api.routes ~ healthService.routes)
-
-//  override def dbSettings = config.db
+  val localUrl = appConfig.api.localUrl
+  HttpServer(Http.Bind(service, localUrl.getHost, port = localUrl.effectivePort))(system, system.dispatcher, Timeout(10.seconds))
 }
 
-object WebApp extends App with Configuration with Loggers {
-  val appConfig = AppConfig(config)
-  implicit val system = ActorSystem("akka-spray", config)
-  implicit val executionContext = DiagnosticExecutionContext(system.dispatcher)
-  implicit val timeout = Timeout(appConfig.api.timeout)
-  sys.addShutdownHook(system.shutdown())
-  val service = system.actorOf(Props(classOf[WebService], appConfig))
-  val localUrl = appConfig.api.localUrl
-  HttpServer(Http.Bind(service, localUrl.getHost, port = localUrl.effectivePort))
+class AdminApiActor(adminApi: AdminApi) extends HttpServiceActor {
+
+  val healthService = new HealthCheckHttpService {
+    override val basePath: Path = Path("/")
+    override implicit def actorRefFactory: ActorRefFactory = AdminApiActor.this.actorRefFactory
+  }
+
+  override def receive = runRoute(healthService.routes ~ adminApi.routes)
 }

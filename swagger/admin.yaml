@@ -61,7 +61,7 @@ paths:
             required: ["v1Path"]
             properties:
               v1Path:
-                $ref: "#/definitions/Key/properties/v1Path
+                $ref: "#/definitions/Key/properties/v1Path"
       responses:
         200:
           description: The association has been made
@@ -106,7 +106,7 @@ definitions:
         description: |
           A unique identifier for the book being encrypted. This is so that
           if the same book is encrypted for a second time, the same key and key-id
-          can be returned. The MD5 of the file being encrypted should be used.
+          can be returned. The MD5 of the file being encrypted must be used.
       v1Path:
         title: Shop v1 Path
         description: |
